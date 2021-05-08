@@ -1,1 +1,1 @@
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)]()
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://raw.githubusercontent.com/MarczakIO/azure-enterprise-templates/main/logic-apps-refresh-azure-analysis-services/logic-apps-refresh-azure-analysis-services.json)
