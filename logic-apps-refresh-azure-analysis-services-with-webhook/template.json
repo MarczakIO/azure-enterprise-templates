@@ -1,0 +1,311 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "LogicAppName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Logic App resource"
+            }
+        },
+        "Location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Region of the Logic App resource"
+            }
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "[parameters('LogicAppName')]",
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2017-07-01",
+            "location": "[parameters('Location')]",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/schemas/2016-06-01/Microsoft.Logic.json",
+                    "actions": {
+                        "Catch": {
+                            "actions": {
+                                "Filter_array": {
+                                    "inputs": {
+                                        "from": "@result('Try')",
+                                        "where": "@equals(item()['status'], 'Failed')"
+                                    },
+                                    "runAfter": {},
+                                    "type": "Query"
+                                },
+                                "Respond_to_ADF_webhook_when_finished_-_FAILED_EXTERNAL_REASONS": {
+                                    "inputs": {
+                                        "body": {
+                                            "Error": {
+                                                "ErrorCode": "500",
+                                                "Message": "@{join(body('Filter_array'),' | ')}"
+                                            },
+                                            "Output": {
+                                                "ErrorMessages": "@body('Filter_array')",
+                                                "Status": "Failed",
+                                                "Workflow": "@workflow()"
+                                            },
+                                            "StatusCode": "500"
+                                        },
+                                        "method": "POST",
+                                        "uri": "@triggerBody()?['callBackUri']"
+                                    },
+                                    "runAfter": {
+                                        "Filter_array": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Http"
+                                }
+                            },
+                            "runAfter": {
+                                "Try": [
+                                    "Failed"
+                                ]
+                            },
+                            "type": "Scope"
+                        },
+                        "Condition": {
+                            "actions": {
+                                "Respond_to_ADF_webhook_when_finished_-_SUCCEEDED": {
+                                    "inputs": {
+                                        "body": {
+                                            "Output": {
+                                                "Status": "@{variables('Refresh Status')}",
+                                                "Workflow": "@workflow()"
+                                            },
+                                            "StatusCode": "200"
+                                        },
+                                        "method": "POST",
+                                        "uri": "@triggerBody()?['callBackUri']"
+                                    },
+                                    "runAfter": {},
+                                    "type": "Http"
+                                }
+                            },
+                            "else": {
+                                "actions": {
+                                    "Respond_to_ADF_webhook_when_finished_-_FAILED_STATUS": {
+                                        "inputs": {
+                                            "body": {
+                                                "Error": {
+                                                    "ErrorCode": "400",
+                                                    "Message": "@{join(body('Get_AAS_Refresh_Status')?['messages'],' | ')}"
+                                                },
+                                                "Output": {
+                                                    "ErrorMessages": "@body('Get_AAS_Refresh_Status')?['messages']",
+                                                    "Status": "@{variables('Refresh Status')}",
+                                                    "Workflow": "@workflow()"
+                                                },
+                                                "StatusCode": "400"
+                                            },
+                                            "method": "POST",
+                                            "uri": "@triggerBody()?['callBackUri']"
+                                        },
+                                        "runAfter": {},
+                                        "type": "Http"
+                                    }
+                                }
+                            },
+                            "expression": {
+                                "and": [
+                                    {
+                                        "equals": [
+                                            "@variables('Refresh Status')",
+                                            "succeeded"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "Catch": [
+                                    "Skipped"
+                                ]
+                            },
+                            "type": "If"
+                        },
+                        "Create_\"Refresh_Response\"_variable": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "Refresh Message",
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "Create_\"Refresh_Status\"_variable": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "Create_\"Refresh_Status\"_variable": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "Refresh Status",
+                                        "type": "string",
+                                        "value": "notStarted"
+                                    }
+                                ]
+                            },
+                            "runAfter": {},
+                            "type": "InitializeVariable"
+                        },
+                        "Try": {
+                            "actions": {
+                                "Request_AAS_Refresh": {
+                                    "inputs": {
+                                        "authentication": {
+                                            "audience": "https://*.asazure.windows.net",
+                                            "type": "ManagedServiceIdentity"
+                                        },
+                                        "body": "@triggerBody()?['AAS Refresh Body']",
+                                        "headers": {
+                                            "Content-Type": "application/json"
+                                        },
+                                        "method": "POST",
+                                        "uri": "https://@{triggerBody()?['AAS Rollout Region']}.asazure.windows.net/servers/@{triggerBody()?['AAS Server Name']}/models/@{triggerBody()?['AAS Model Name']}/refreshes"
+                                    },
+                                    "operationOptions": "DisableAsyncPattern",
+                                    "runAfter": {},
+                                    "type": "Http"
+                                },
+                                "Respond_to_ADF_that_refresh_started": {
+                                    "inputs": {
+                                        "body": "@body('Request_AAS_Refresh')",
+                                        "statusCode": 200
+                                    },
+                                    "kind": "Http",
+                                    "runAfter": {
+                                        "Request_AAS_Refresh": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Response"
+                                },
+                                "Until": {
+                                    "actions": {
+                                        "Delay": {
+                                            "inputs": {
+                                                "interval": {
+                                                    "count": 10,
+                                                    "unit": "Second"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Set_\"Refresh_Status\"_variable": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Wait"
+                                        },
+                                        "Get_AAS_Refresh_Status": {
+                                            "inputs": {
+                                                "authentication": {
+                                                    "audience": "https://*.asazure.windows.net",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
+                                                "headers": {
+                                                    "Content-Type": "application/json"
+                                                },
+                                                "method": "GET",
+                                                "uri": "@{outputs('Request_AAS_Refresh')['headers']?['Location']}"
+                                            },
+                                            "runAfter": {},
+                                            "type": "Http"
+                                        },
+                                        "Set_\"Refresh_Status\"_variable": {
+                                            "inputs": {
+                                                "name": "Refresh Status",
+                                                "value": "@{body('Get_AAS_Refresh_Status')?['status']}"
+                                            },
+                                            "runAfter": {
+                                                "Get_AAS_Refresh_Status": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "SetVariable"
+                                        }
+                                    },
+                                    "expression": "@not(or(equals(variables('Refresh Status'), 'inProgress'),equals(variables('Refresh Status'), 'notStarted')))",
+                                    "limit": {
+                                        "count": 720,
+                                        "timeout": "PT12H"
+                                    },
+                                    "runAfter": {
+                                        "Respond_to_ADF_that_refresh_started": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "Until"
+                                }
+                            },
+                            "runAfter": {
+                                "Create_\"Refresh_Response\"_variable": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "Scope"
+                        }
+                    },
+                    "contentVersion": "1.0.0.0",
+                    "outputs": {},
+                    "parameters": {},
+                    "triggers": {
+                        "manual": {
+                            "inputs": {
+                                "schema": {
+                                    "properties": {
+                                        "AAS Model Name": {
+                                            "type": "string"
+                                        },
+                                        "AAS Refresh Body": {
+                                            "type": "object"
+                                        },
+                                        "AAS Rollout Region": {
+                                            "type": "string"
+                                        },
+                                        "AAS Server Name": {
+                                            "type": "string"
+                                        },
+                                        "callBackUri": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            },
+                            "kind": "Http",
+                            "type": "Request"
+                        }
+                    }
+                },
+                "parameters": {}
+            }
+        }
+    ],
+    "outputs": {
+        "IdentityPrinicpalId": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Logic/workflows', parameters('logicAppName')), '2019-05-01', 'Full').identity.principalId]"
+        },
+        "IdentityTenantId": {
+            "type": "string",
+            "value": "[subscription().tenantId]"
+        },
+        "LogicAppName": {
+            "type": "string",
+            "value": "[parameters('LogicAppName')]"
+        }
+    }
+}
