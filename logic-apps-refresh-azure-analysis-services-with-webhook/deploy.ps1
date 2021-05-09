@@ -21,8 +21,8 @@ Write-Host "[$(Get-Date)] Deploying the logic app" -ForegroundColor Cyan
 $deployment = New-AzResourceGroupDeployment `
     -ResourceGroupName $logicAppResourceGroupName `
     -Name "la-depl-$((Get-Date).Ticks)" `
-    -TemplateFile .\logic-apps-refresh-azure-analysis-services.json `
-    -TemplateParameterFile .\logic-apps-refresh-azure-analysis-services.parameters.json
+    -TemplateFile .\template.json `
+    -TemplateParameterFile .\template.parameters.json
 
 # Get Logic App info from the deployment
 $logicAppIdentityPrincipalId = $deployment.outputs.identityPrinicpalId.value;
