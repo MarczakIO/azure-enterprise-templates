@@ -158,8 +158,20 @@
                                     }
                                 ]
                             },
-                            "runAfter": {},
+                            "runAfter": {
+                                "Respond_to_ADF_that_refresh_started": [
+                                    "Succeeded"
+                                ]
+                            },
                             "type": "InitializeVariable"
+                        },
+                        "Respond_to_ADF_that_refresh_started": {
+                            "inputs": {
+                                "statusCode": 200
+                            },
+                            "kind": "Http",
+                            "runAfter": {},
+                            "type": "Response"
                         },
                         "Try": {
                             "actions": {
@@ -180,25 +192,12 @@
                                     "runAfter": {},
                                     "type": "Http"
                                 },
-                                "Respond_to_ADF_that_refresh_started": {
-                                    "inputs": {
-                                        "body": "@body('Request_AAS_Refresh')",
-                                        "statusCode": 200
-                                    },
-                                    "kind": "Http",
-                                    "runAfter": {
-                                        "Request_AAS_Refresh": [
-                                            "Succeeded"
-                                        ]
-                                    },
-                                    "type": "Response"
-                                },
                                 "Until": {
                                     "actions": {
                                         "Delay": {
                                             "inputs": {
                                                 "interval": {
-                                                    "count": 30,
+                                                    "count": 10,
                                                     "unit": "Second"
                                                 }
                                             },
@@ -243,7 +242,7 @@
                                         "timeout": "PT12H"
                                     },
                                     "runAfter": {
-                                        "Respond_to_ADF_that_refresh_started": [
+                                        "Request_AAS_Refresh": [
                                             "Succeeded"
                                         ]
                                     },
