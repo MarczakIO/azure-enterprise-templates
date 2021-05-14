@@ -8,14 +8,14 @@ I advise usage of `deploy.ps1` attached script as it grants Admin permission on 
 
 ## Data Factory Configuration
 
-![Activity Configuration](.\images/webhook-pl-1.png)
+![Activity Configuration](images/webhook-pl-1.png)
 
 ### Webhook configuration
 
-![Activity Configuration](.\images/webhook-setup.png)
+![Activity Configuration](images/webhook-setup.png)
 
 * **URL** - Get URL from Logic App first step.
-  ![Activity Configuration](.\images/logic-app-url.png)
+  ![Activity Configuration](images/logic-app-url.png)
 * **Body** - use this template  
   ```json
   {
