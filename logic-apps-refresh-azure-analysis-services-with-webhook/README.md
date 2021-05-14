@@ -48,3 +48,4 @@ I advise usage of `deploy.ps1` attached script as it grants Admin permission on 
   ```
   * **Report status on callback** - Checked
     ***Important!*** - This is important to be checked.
+  * **Timeout** - Set up maximum time that you expect to refresh to finish in.
