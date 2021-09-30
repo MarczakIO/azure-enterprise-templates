@@ -51,10 +51,17 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
   * Option #1 (Recommended) - Use PowerShell (Local or CloudShell)
   
     ```PowerShell
-    New-AzResourceGroupDeployment `
-        -ResourceGroupName "<resource_group_name>" `
-        -LogicAppName "<name_of_your_logic_app>" `
-        -TemplateUri "https://raw.githubusercontent.com/MarczakIO/  azure-enterprise-templates/main/data-factory/  refresh-analysis-services-logic-app/template.json"
+    Invoke-WebRequest `
+      -Uri "https://raw.githubusercontent.com/MarczakIO/azure-enterprise-templates/main/data-factory/refresh-analysis-services-logic-app/assign-adf-as-aas-admin.ps1" `
+      -OutFile assign-adf-as-aas-admin.ps1
+
+    .\assign-adf-as-aas-admin.ps1 `
+      -dataFactoryName "<your_data_factory_name>" `
+      -dataFactoryResourceGroupName "<your_data_factory_resource_group_name>" `
+      -dataFactorySubscriptionName "<your_data_factory_subscription_name>" `
+      -analysisServicesName "<your_analysis_services_name>" `
+      -analysisServicesResourceGroupName "<your_analysis_services_resource_group_name>" `
+      -analysisServicesSubscriptionName "<your_analysis_services_subscription_name>"
     ```
 
   * Option #2 - Use PowerShell manually script located here [assign-adf-as-aas-admin.ps1](assign-adf-as-aas-admin.ps1)

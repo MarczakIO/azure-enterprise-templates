@@ -4,6 +4,9 @@ param(
     $dataFactorySubscriptionName = ""
 )
 
+$ErrorActionPreference = "Stop"
+Write-Host "Running..."
+
 Select-AzSubscription -Subscription $dataFactorySubscriptionName
 
 $resource = Get-AzResource `
