@@ -1,10 +1,12 @@
-$dataFactoryName = ""
-$dataFactoryResourceGroupName = ""
-$dataFactorySubscriptionName = ""
-
-$analysisServicesName = ""
-$analysisServicesResourceGroupName = ""
-$analysisServicesSubscriptionName = ""
+param(
+    $dataFactoryName = "",
+    $dataFactoryResourceGroupName = "",
+    $dataFactorySubscriptionName = "",
+    
+    $analysisServicesName = "",
+    $analysisServicesResourceGroupName = "",
+    $analysisServicesSubscriptionName = ""
+)
 
 Select-AzSubscription -Subscription $dataFactorySubscriptionName
 

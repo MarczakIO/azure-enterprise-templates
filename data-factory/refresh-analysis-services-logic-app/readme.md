@@ -38,7 +38,7 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
     New-AzResourceGroupDeployment `
         -ResourceGroupName "<resource_group_name>" `
         -LogicAppName "<name_of_your_logic_app>" `
-        -TemplateUri "https://raw.githubusercontent.com/MarczakIO/  azure-enterprise-templates/main/data-factory/  refresh-analysis-services-logic-app/template.json"
+        -TemplateUri "https://raw.githubusercontent.com/MarczakIO/azure-enterprise-templates/main/data-factory/refresh-analysis-services-logic-app/template.json"
     ```
 
   * Option 2 - Deploy with ARM template using Azure Portal
