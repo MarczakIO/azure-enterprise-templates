@@ -1,4 +1,4 @@
-param(
+param (
     $dataFactoryName = "",
     $dataFactoryResourceGroupName = "",
     $dataFactorySubscriptionName = "",
@@ -7,6 +7,9 @@ param(
     $analysisServicesResourceGroupName = "",
     $analysisServicesSubscriptionName = ""
 )
+
+$ErrorActionPreference = "Stop"
+Write-Host "Running..."
 
 Select-AzSubscription -Subscription $dataFactorySubscriptionName
 
