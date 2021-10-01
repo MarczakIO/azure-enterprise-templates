@@ -1,7 +1,8 @@
 param (
-    $dataFactoryName = "",
-    $dataFactoryResourceGroupName = "",
-    $dataFactorySubscriptionName = "",
+    $resourceName = "",
+    $resourceType = "",
+    $resourceResourceGroupName = "",
+    $resourceSubscriptionName = "",
     
     $analysisServicesName = "",
     $analysisServicesResourceGroupName = "",
@@ -11,13 +12,11 @@ param (
 $ErrorActionPreference = "Stop"
 Write-Host "Running..."
 
-Select-AzSubscription -Subscription $dataFactorySubscriptionName
-
-$resourceType = "Microsoft.DataFactory/factories"
+Select-AzSubscription -Subscription $resourceSubscriptionName
 
 $resource = Get-AzResource `
-    -Name $dataFactoryName `
-    -ResourceGroupName $dataFactoryResourceGroupName `
+    -Name $resourceName `
+    -ResourceGroupName $resourceResourceGroupName `
     -ResourceType $resourceType
 $managedIdentityPrincipalId = $resource.identity.PrincipalId;
 $managedIdentityTenantId = $resource.identity.TenantId;

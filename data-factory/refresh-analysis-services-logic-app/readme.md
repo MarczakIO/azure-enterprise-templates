@@ -52,24 +52,26 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
   
     ```PowerShell
     Invoke-WebRequest `
-      -Uri "https://raw.githubusercontent.com/MarczakIO/azure-enterprise-templates/main/data-factory/refresh-analysis-services-logic-app/assign-adf-as-aas-admin.ps1" `
-      -OutFile assign-adf-as-aas-admin.ps1
+      -Uri "https://raw.githubusercontent.com/MarczakIO/azure-enterprise-templates/main/data-factory/refresh-analysis-services-logic-app/assign-resource-identity-as-aas-admin.ps1" `
+      -OutFile assign-resource-identity-as-aas-admin.ps1
 
-    .\assign-adf-as-aas-admin.ps1 `
-      -dataFactoryName <your_data_factory_name> `
-      -dataFactoryResourceGroupName <your_data_factory_resource_group_name> `
-      -dataFactorySubscriptionName <your_data_factory_subscription_name> `
+    .\assign-resource-identity-as-aas-admin.ps1 `
+      -resourceName <your_logic_app_name> `
+      -resourceType "Microsoft.Logic/workflows" `
+      -resourceResourceGroupName <your_logic_app_resource_group_name> `
+      -resourceSubscriptionName <your_logic_app_subscription_name> `
       -analysisServicesName <your_analysis_services_name> `
       -analysisServicesResourceGroupName <your_analysis_services_resource_group_name> `
       -analysisServicesSubscriptionName <your_analysis_services_subscription_name>
     ```
 
-  * Option #2 - Use PowerShell manually script located here [assign-adf-as-aas-admin.ps1](assign-adf-as-aas-admin.ps1)
+  * Option #2 - Use PowerShell manually script located here [assign-resource-identity-as-aas-admin.ps1](assign-resource-identity-as-aas-admin.ps1)
 
     * Replace six variables with the ones from your environment
-      * $dataFactoryName
-      * $dataFactoryResourceGroupName
-      * $dataFactorySubscriptionName
+      * $resourceName
+      * $resourceResourceGroupName
+      * $resourceType 
+      * $resourceSubscriptionName
       * $analysisServicesName
       * $analysisServicesResourceGroupName
       * $analysisServicesSubscriptionName
