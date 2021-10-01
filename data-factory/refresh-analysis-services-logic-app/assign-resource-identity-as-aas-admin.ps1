@@ -27,11 +27,11 @@ $managedIdentityAppId = (Get-AzADServicePrincipal `
 $managedIdentityAppIdentifier = "app:$managedIdentityAppId@$managedIdentityTenantId"
 
 Write-Host "[$(Get-Date)] Resource Details" -ForegroundColor Cyan
-Write-Output "Resource Name: $($resource.Name)"
-Write-Output "Managed Identity Principal Id: $($managedIdentityPrincipalId)"
-Write-Output "Managed Identity App Id: $($managedIdentityAppId)"
-Write-Output "Managed Identity Tenant Id: $($managedIdentityTenantId)"
-Write-Output "Managed Identity Identifier: $($managedIdentityAppIdentifier)" -ForegroundColor Cyan
+Write-Host "Resource Name: $($resource.Name)"
+Write-Host "Managed Identity Principal Id: $($managedIdentityPrincipalId)"
+Write-Host "Managed Identity App Id: $($managedIdentityAppId)"
+Write-Host "Managed Identity Tenant Id: $($managedIdentityTenantId)"
+Write-Host "Managed Identity Identifier: $($managedIdentityAppIdentifier)" -ForegroundColor Cyan
 
 
 # Set active subscription for the analysis services update
@@ -46,7 +46,7 @@ $analysisServices = Get-AzAnalysisServicesServer `
 
 
 if ($analysisServices.State -ne 'Succeeded') {
-    Write-Host "AAS is not running... stopping!"
+    Write-Host "AAS is not running... stopping!" -ForegroundColor Red
 } else {
     $analysisServicesAdministrators = $analysisServices.AsAdministrators
 

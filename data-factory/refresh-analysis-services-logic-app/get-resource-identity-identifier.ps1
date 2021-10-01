@@ -23,4 +23,4 @@ $managedIdentityAppId = (Get-AzADServicePrincipal `
 $managedIdentityAppIdentifier = "app:$managedIdentityAppId@$managedIdentityTenantId"
 
 Write-Host "[$(Get-Date)] Resource Details" -ForegroundColor Cyan
-Write-Output "Managed Identity Identifier: $($managedIdentityAppIdentifier)" -ForegroundColor Cyan
+Write-Host "Managed Identity Identifier: $($managedIdentityAppIdentifier)" -ForegroundColor Cyan
