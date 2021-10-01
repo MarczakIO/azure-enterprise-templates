@@ -1,18 +1,19 @@
-param(
-    $dataFactoryName = "",
-    $dataFactoryResourceGroupName = "",
-    $dataFactorySubscriptionName = ""
+param (
+    $resourceName = "",
+    $resourceType = "",
+    $resourceResourceGroupName = "",
+    $resourceSubscriptionName = "",
 )
 
 $ErrorActionPreference = "Stop"
 Write-Host "Running..."
 
-Select-AzSubscription -Subscription $dataFactorySubscriptionName
+Select-AzSubscription -Subscription $resourceSubscriptionName
 
 $resource = Get-AzResource `
-    -Name $dataFactoryName `
-    -ResourceGroupName $dataFactoryResourceGroupName `
-    -ResourceType "Microsoft.DataFactory/factories"
+    -Name $resourceName `
+    -ResourceGroupName $resourceResourceGroupName `
+    -ResourceType $resourceType
 $managedIdentityPrincipalId = $resource.identity.PrincipalId;
 $managedIdentityTenantId = $resource.identity.TenantId;
 
@@ -21,4 +22,5 @@ $managedIdentityAppId = (Get-AzADServicePrincipal `
     -ObjectId $managedIdentityPrincipalId).ApplicationId
 $managedIdentityAppIdentifier = "app:$managedIdentityAppId@$managedIdentityTenantId"
 
-Write-Host "Managed Identity Identifier: $($managedIdentityAppIdentifier)" -ForegroundColor Cyan
+Write-Host "[$(Get-Date)] Resource Details" -ForegroundColor Cyan
+Write-Output "Managed Identity Identifier: $($managedIdentityAppIdentifier)" -ForegroundColor Cyan
