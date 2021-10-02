@@ -28,28 +28,24 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
 
 # Deployment Steps
 
-* Deploy **Azure Logic App**
-  
-  **Hint**: You can use this deploy and provide the name of existing logic app to update it 
+1. Create Logic App from ARM template
+2. Assign Logic App Managed Identity to Azure Analysis Services as an administrator
+3. Get Logic App URL 
+4. Add & configure Webhook Activity in Data Factory
 
-  * Option 1 - Deploy using PowerShell (Local or CloudShell)
+# Deployment Steps (PowerShell or CloudShell)
+
+1. Create Logic App from ARM template
 
     ```PowerShell
     New-AzResourceGroupDeployment `
-        -ResourceGroupName <resource_group_name> `
-        -LogicAppName <name_of_your_logic_app> `
+        -ResourceGroupName <your_logic_app_resource_group_name> `
+        -LogicAppName <your_logic_app_name> `
         -TemplateUri "https://raw.githubusercontent.com/MarczakIO/azure-enterprise-templates/main/data-factory/refresh-analysis-services-logic-app/template.json"
     ```
 
-  * Option 2 - Deploy with ARM template using Azure Portal
-  
-    [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMarczakIO%2Fazure-enterprise-templates%2Fmain%2Fdata-factory%2Frefresh-analysis-services-logic-app%2Ftemplate.json)
+2. Assign Logic App Managed Identity to Azure Analysis Services as an administrator
 
-  * Option 3 - Using [ARM template](../refresh-analysis-services-logic-app/template.json) manually
-  
-* Assign Admin permissions for Azure Data Factory
-  * Option #1 (Recommended) - Use PowerShell (Local or CloudShell)
-  
     ```PowerShell
     Invoke-WebRequest `
       -Uri "https://raw.githubusercontent.com/MarczakIO/azure-enterprise-templates/main/data-factory/refresh-analysis-services-logic-app/assign-resource-identity-as-aas-admin.ps1" `
@@ -64,6 +60,31 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
       -analysisServicesResourceGroupName <your_analysis_services_resource_group_name> `
       -analysisServicesSubscriptionName <your_analysis_services_subscription_name>
     ```
+
+3. Get Logic App URL 
+
+    ```PowerShell
+    Get-AzLogicAppTriggerCallbackUrl `
+      -Name <your_logic_app_name> `
+      -ResourceGroupName <your_logic_app_resource_group_name> `
+      -TriggerName manual
+    ```
+
+4. Add & configure Webhook Activity in Data Factory
+
+# Deployment Steps (Manual)
+
+1. Create Logic App from ARM template
+
+    * Option 1 - Deploy with ARM template using Azure Portal
+    
+      [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMarczakIO%2Fazure-enterprise-templates%2Fmain%2Fdata-factory%2Frefresh-analysis-services-logic-app%2Ftemplate.json)
+
+    * Option 2 - Using [ARM template](../refresh-analysis-services-logic-app/template.json) manually
+
+2. Assign Logic App Managed Identity to Azure Analysis Services as an administrator
+3. Get Logic App URL 
+4. Add & configure Webhook Activity in Data Factory
 
   * Option #2 - Use PowerShell manually script located here [assign-resource-identity-as-aas-admin.ps1](assign-resource-identity-as-aas-admin.ps1)
 
@@ -96,12 +117,7 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
       ![Activity Configuration](images/logic-app-url-new.png)
   
     * Option #3 - via PowerShell
-      ```PowerShell
-      Get-AzLogicAppTriggerCallbackUrl `
-        -Name <your_logic_app_name> `
-        -ResourceGroupName <your_logic_app_resource_group_name> `
-        -TriggerName manual
-      ```
+
 
   * **Method** POST
   * **Body** - use this template  
