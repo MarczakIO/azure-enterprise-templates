@@ -70,7 +70,7 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
       -TriggerName manual
     ```
 
-4. Add & configure Webhook Activity in Data Factory
+4. Add & configure Webhook Activity in Data Factory (described below)
 
 # Deployment Steps (Manual)
 
@@ -83,8 +83,6 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
     * Option 2 - Using [ARM template](../refresh-analysis-services-logic-app/template.json) manually
 
 2. Assign Logic App Managed Identity to Azure Analysis Services as an administrator
-3. Get Logic App URL 
-4. Add & configure Webhook Activity in Data Factory
 
   * Option #2 - Use PowerShell manually script located here [assign-resource-identity-as-aas-admin.ps1](assign-resource-identity-as-aas-admin.ps1)
 
@@ -100,13 +98,18 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
   * Option #3 - Use SQL Server Management Studio
     * 
 
+3. Get Logic App URL 
+
+# Usage (Data Factory)
+Add & configure Webhook Activity in Data Factory
+
 * Open **Azure Data Factory** and add new **Webhook Activity**
   
   ![Activity Configuration](images/webhook-pl-1.png)
 
   Configure the setup as follows
 
-  * **URL** - Get URL from Logic App first step.
+* **URL** - Get URL from Logic App first step.
     
     * Option #1 - via old UI
       
@@ -119,43 +122,45 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
     * Option #3 - via PowerShell
 
 
-  * **Method** POST
-  * **Body** - use this template  
-    ```json
-    {
-        "AAS Model Name": "<model_name>",
-        "AAS Refresh Body": {
-            "CommitMode": "transactional",
-            "MaxParallelism": 2,
-            "Objects": [],
-            "RetryCount": 2,
-            "Type": "Full"
-        },
-        "AAS Rollout Region": "<rollout_region>",
-        "AAS Server Name": "<server_name>"
-    }
-    ```
-    *Example*
-    ```json
-    {
-        "AAS Model Name": "DemoTabular",
-        "AAS Refresh Body": {
-            "CommitMode": "transactional",
-            "MaxParallelism": 2,
-            "Objects": [],
-            "RetryCount": 2,
-            "Type": "Full"
-        },
-        "AAS Rollout Region": "westeurope",
-        "AAS Server Name": "analysisservicesdemo"
-    }
-    ```
-    * **Report status on callback** - Checked
-      ***Important!*** - This is important to be checked.
-    * **Timeout** - Set up maximum time that you expect to refresh to finish in.
+* **Method** POST
+* **Body** - use this template  
+  ```json
+  {
+      "AAS Model Name": "<model_name>",
+      "AAS Refresh Body": {
+          "CommitMode": "transactional",
+          "MaxParallelism": 2,
+          "Objects": [],
+          "RetryCount": 2,
+          "Type": "Full"
+      },
+      "AAS Rollout Region": "<rollout_region>",
+      "AAS Server Name": "<server_name>"
+  }
+  ```
+  *Example*
+  ```json
+  {
+      "AAS Model Name": "DemoTabular",
+      "AAS Refresh Body": {
+          "CommitMode": "transactional",
+          "MaxParallelism": 2,
+          "Objects": [],
+          "RetryCount": 2,
+          "Type": "Full"
+      },
+      "AAS Rollout Region": "westeurope",
+      "AAS Server Name": "analysisservicesdemo"
+  }
+  ```
+* **Report status on callback** - Checked
+  ***Important!*** - This is important to be checked.
+* **Timeout** - Set up maximum time that you expect to refresh to finish in.
 
-* Your Webhook should look as follows
-  ![Activity Configuration](images/webhook-setup.png)
-* Debug and run it!
+  * *Example* configuration
+
+    ![Activity Configuration](images/webhook-setup.png)
+
+2. Debug and test it!
 
   ![OK](images/webhook-success.png) 
