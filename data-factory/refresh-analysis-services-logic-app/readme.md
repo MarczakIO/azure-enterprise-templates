@@ -21,10 +21,14 @@ Alternative approach [using Azure Logic Apps is described here](../refresh-analy
 
 ## Diagram
  ![Diagram](images/diagram.svg)
+
 ## Benefits
 - Azure Logic Apps are extremely cheap small asynchronous tasks. There is literally 0$ costs involved in just waiting as consumption based (serverless) Logic Apps have no infrasurcture associated with them. 
 - No Data Factory cost associated for waiting when using Webhook!
   ![OK](images/webhook-cost.png) 
+
+## Flow Diagram
+ ![Diagram](images/diagram-flow.svg)
 
 # Deployment Steps
 
