@@ -120,6 +120,12 @@ Add & configure Webhook Activity in Data Factory
   
     * Option #3 - via PowerShell
 
+      ```PowerShell
+      Get-AzLogicAppTriggerCallbackUrl `
+        -Name <your_logic_app_name> `
+        -ResourceGroupName <your_logic_app_resource_group_name> `
+        -TriggerName manual
+      ```
 
 * **Method** POST
 * **Body** - use this template  
