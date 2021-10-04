@@ -5,8 +5,6 @@ This small manual should help data engineers refresh Azure Analysis Services fro
 ## Brief
 This code will refresh Azure Analysis Services model and wait for it's completion using Azure Data Factory Webhook activity to call Azure Logic App.
 
-Alternative approach [using Azure Logic Apps is described here](../refresh-analysis-services-logic-app/index.md).
-
 ## Services used
 
 - Azure Data Factory
