@@ -26,7 +26,7 @@ This code will refresh Azure Analysis Services model and wait for it's completio
   ![OK](images/webhook-cost.png) 
 
 ## Flow Diagram
- ![Diagram](images/diagram-flow.svg)
+ ![Diagram](images/diagram-flow-2.svg)
 
 # Deployment Steps
 
@@ -86,21 +86,18 @@ This code will refresh Azure Analysis Services model and wait for it's completio
 
 2. Assign Logic App Managed Identity to Azure Analysis Services as an administrator
 
-  * Option #2 - Use PowerShell manually script located here [assign-resource-identity-as-aas-admin.ps1](assign-resource-identity-as-aas-admin.ps1)
+     * Option #1 - Use PowerShell manually script located here [assign-resource-identity-as-aas-admin.ps1](assign-resource-identity-as-aas-admin.ps1)
 
-    * Replace six variables with the ones from your environment
-      * $resourceName
-      * $resourceResourceGroupName
-      * $resourceType 
-      * $resourceSubscriptionName
-      * $analysisServicesName
-      * $analysisServicesResourceGroupName
-      * $analysisServicesSubscriptionName
+       * Replace six variables with the ones from your environment
+         * resourceName
+         * resourceResourceGroupName
+         * resourceType 
+         * resourceSubscriptionName
+         * analysisServicesName
+         * analysisServicesResourceGroupName
+         * analysisServicesSubscriptionName
 
-  * Option #3 - Use SQL Server Management Studio
-    * 
-
-3. Get Logic App URL 
+     * Option #2 - Use SQL Server Management Studio (TO-DO)
 
 # Usage (Data Factory)
 Add & configure Webhook Activity in Data Factory
