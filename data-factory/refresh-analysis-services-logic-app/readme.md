@@ -26,7 +26,7 @@ This code will refresh Azure Analysis Services model and wait for it's completio
   ![OK](images/webhook-cost.png) 
 
 ## Flow Diagram
- ![Diagram](images/diagram-flow-2.svg)
+ ![Diagram](images/diagram-flow.svg) 
 
 # Deployment Steps
 
