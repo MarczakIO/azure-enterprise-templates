@@ -28,6 +28,9 @@ This code will refresh Azure Analysis Services model and wait for it's completio
 ## Flow Diagram
  ![Diagram](images/diagram-flow.svg) 
 
+## Logic App Design
+ ![Diagram](images/logic-app-design.png) 
+
 # Deployment Steps
 
 1. Create Logic App from ARM template
