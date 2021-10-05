@@ -1,0 +1,296 @@
+trigger:
+  - master
+  
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  devServiceConnectionName: <connection-name>
+  devSubscriptionId: <subscription-id>
+  devResourceGroupName: <data-factory-resource-group-name>
+  devDataFactoryName: <data-factory-name>
+  devLocation: '<data-factory-region>'
+  devParam1: 'abc'
+  devParam2: 'zyx'
+  devParam3: '123'
+
+  testServiceConnectionName: <connection-name>
+  testSubscriptionId: <subscription-id>
+  testResourceGroupName: <data-factory-resource-group-name>
+  testDataFactoryName: <data-factory-name>
+  testLocation: '<data-factory-region>'
+  testParam1: 'abc'
+  testParam2: 'zyx'
+  testParam3: '123'
+
+  prodServiceConnectionName: <connection-name>
+  prodSubscriptionId: <subscription-id>
+  prodResourceGroupName: <data-factory-resource-group-name>
+  prodDataFactoryName: <data-factory-name>
+  prodLocation: '<data-factory-region>'
+  prodParam1: 'abc'
+  prodParam2: 'zyx'
+  prodParam3: '123'
+
+stages:
+
+- stage: BUILD
+  jobs:
+  - job: BUILD
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '10.x'
+      displayName: 'Install Node.js'
+
+    - task: Npm@1
+      inputs:
+        command: 'install'
+        workingDir: '$(Build.Repository.LocalPath)/devops' #replace with the package.json folder
+        verbose: true
+      displayName: 'Install npm package'
+
+    # Validates all of the Data Factory resources in the repository. You'll get the same validation errors as when "Validate All" is selected.
+    # Enter the appropriate subscription and name for the source factory.
+
+    - task: Npm@1
+      inputs:
+        command: 'custom'
+        workingDir: '$(Build.Repository.LocalPath)/devops'
+        customCommand: 'run build validate $(Build.Repository.LocalPath) /subscriptions/$(devSubscriptionId)/resourceGroups/$(devResourceGroupName)/providers/Microsoft.DataFactory/factories/$(devDataFactoryName)'
+      displayName: 'Validate'
+
+    # Validate and then generate the ARM template into the destination folder, which is the same as selecting "Publish" from the UX.
+    # The ARM template generated isn't published to the live version of the factory. Deployment should be done by using a CI/CD pipeline. 
+
+    - task: Npm@1
+      inputs:
+        command: 'custom'
+        workingDir: '$(Build.Repository.LocalPath)/devops' #replace with the package.json folder
+        customCommand: 'run build export $(Build.Repository.LocalPath) /subscriptions/$(devSubscriptionId)/resourceGroups/$(devResourceGroupName)/providers/Microsoft.DataFactory/factories/$(devDataFactoryName) "ArmTemplate"'
+      displayName: 'Validate and Generate ARM template'
+
+    # Publish the artifact to be used as a source for a release pipeline.
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.Repository.LocalPath)/devops/ArmTemplate'
+        artifact: 'ArmTemplates'
+        publishLocation: 'pipeline'
+
+- stage: DEV
+  jobs:
+  - deployment: DEV
+    environment: 'DEV'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo Deploying to DEV
+            
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              source: current
+              artifact: 'ArmTemplates'
+              downloadPath: $(System.ArtifactsDirectory)
+
+          - task: AzurePowerShell@5
+            displayName: 'Stop Triggers'
+            inputs:
+              azureSubscription: '$(devServiceConnectionName)'
+              ScriptPath: '$(System.ArtifactsDirectory)/PrePostDeploymentScript.ps1'
+              ScriptArguments: "-armTemplate $(System.ArtifactsDirectory)/ARMTemplateForFactory.json \
+                -ResourceGroupName $(devResourceGroupName) \
+                -DataFactoryName  $(devDataFactoryName) \
+                -predeployment $true \
+                -deleteDeployment $false"
+              azurePowerShellVersion: LatestVersion
+
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'ARM Template deployment: Resource Group scope'
+            inputs:
+              azureResourceManagerConnection: '$(devServiceConnectionName)'
+              subscriptionId: '$(devSubscriptionId)'
+              resourceGroupName: '$(devResourceGroupName)'
+              location: '$(devLocation)'
+              csmFile: '$(System.ArtifactsDirectory)/ARMTemplateForFactory.json'
+              csmParametersFile: '$(System.ArtifactsDirectory)/ARMTemplateParametersForFactory.json'
+              overrideParameters: "-factoryName $(devDataFactoryName) \
+                -Param1 '$(devParam1)' \
+                -Param2 '$(devParam2)' \
+                -Param3 '$(devParam3)'"
+          
+          - task: AzurePowerShell@5
+            displayName: 'Start Triggers'
+            inputs:
+              azureSubscription: '$(devServiceConnectionName)'
+              ScriptPath: '$(System.ArtifactsDirectory)/PrePostDeploymentScript.ps1'
+              ScriptArguments: "-armTemplate $(System.ArtifactsDirectory)/ARMTemplateForFactory.json \
+                -ResourceGroupName $(devResourceGroupName) \
+                -DataFactoryName  $(devDataFactoryName) \
+                -predeployment $false \
+                -deleteDeployment $false"
+              azurePowerShellVersion: LatestVersion
+
+- stage: DEV
+  jobs:
+  - deployment: DEV
+    environment: 'DEV'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo Deploying to DEV
+            
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              source: current
+              artifact: 'ArmTemplates'
+              downloadPath: $(System.ArtifactsDirectory)
+
+          - task: AzurePowerShell@5
+            displayName: 'Stop Triggers'
+            inputs:
+              azureSubscription: '$(devServiceConnectionName)'
+              ScriptPath: '$(System.ArtifactsDirectory)/PrePostDeploymentScript.ps1'
+              ScriptArguments: "-armTemplate $(System.ArtifactsDirectory)/ARMTemplateForFactory.json \
+                -ResourceGroupName $(devResourceGroupName) \
+                -DataFactoryName  $(devDataFactoryName) \
+                -predeployment $true \
+                -deleteDeployment $false"
+              azurePowerShellVersion: LatestVersion
+
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'ARM Template deployment: Resource Group scope'
+            inputs:
+              azureResourceManagerConnection: '$(devServiceConnectionName)'
+              subscriptionId: '$(devSubscriptionId)'
+              resourceGroupName: '$(devResourceGroupName)'
+              location: '$(devLocation)'
+              csmFile: '$(System.ArtifactsDirectory)/ARMTemplateForFactory.json'
+              csmParametersFile: '$(System.ArtifactsDirectory)/ARMTemplateParametersForFactory.json'
+              overrideParameters: "-factoryName $(devDataFactoryName) \
+                -Param1 '$(devParam1)' \
+                -Param2 '$(devParam2)' \
+                -Param3 '$(devParam3)'"
+          
+          - task: AzurePowerShell@5
+            displayName: 'Start Triggers'
+            inputs:
+              azureSubscription: '$(devServiceConnectionName)'
+              ScriptPath: '$(System.ArtifactsDirectory)/PrePostDeploymentScript.ps1'
+              ScriptArguments: "-armTemplate $(System.ArtifactsDirectory)/ARMTemplateForFactory.json \
+                -ResourceGroupName $(devResourceGroupName) \
+                -DataFactoryName  $(devDataFactoryName) \
+                -predeployment $false \
+                -deleteDeployment $false"
+              azurePowerShellVersion: LatestVersion
+
+- stage: TEST
+  jobs:
+  - deployment: TEST
+    environment: 'TEST'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo Deploying to TEST
+            
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              source: current
+              artifact: 'ArmTemplates'
+              downloadPath: $(System.ArtifactsDirectory)
+
+          - task: AzurePowerShell@5
+            displayName: 'Stop Triggers'
+            inputs:
+              azureSubscription: '$(testServiceConnectionName)'
+              ScriptPath: '$(System.ArtifactsDirectory)/PrePostDeploymentScript.ps1'
+              ScriptArguments: "-armTemplate $(System.ArtifactsDirectory)/ARMTemplateForFactory.json \
+                -ResourceGroupName $(testResourceGroupName) \
+                -DataFactoryName  $(testDataFactoryName) \
+                -predeployment $true \
+                -deleteDeployment $false"
+              azurePowerShellVersion: LatestVersion
+
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'ARM Template deployment: Resource Group scope'
+            inputs:
+              azureResourceManagerConnection: '$(testServiceConnectionName)'
+              subscriptionId: '$(testSubscriptionId)'
+              resourceGroupName: '$(testResourceGroupName)'
+              location: '$(testLocation)'
+              csmFile: '$(System.ArtifactsDirectory)/ARMTemplateForFactory.json'
+              csmParametersFile: '$(System.ArtifactsDirectory)/ARMTemplateParametersForFactory.json'
+              overrideParameters: "-factoryName $(testDataFactoryName) \
+                -Param1 '$(testParam1)' \
+                -Param2 '$(testParam2)' \
+                -Param3 '$(testParam3)'"
+          
+          - task: AzurePowerShell@5
+            displayName: 'Start Triggers'
+            inputs:
+              azureSubscription: '$(testServiceConnectionName)'
+              ScriptPath: '$(System.ArtifactsDirectory)/PrePostDeploymentScript.ps1'
+              ScriptArguments: "-armTemplate $(System.ArtifactsDirectory)/ARMTemplateForFactory.json \
+                -ResourceGroupName $(testResourceGroupName) \
+                -DataFactoryName  $(testDataFactoryName) \
+                -predeployment $false \
+                -deleteDeployment $false"
+              azurePowerShellVersion: LatestVersion
+  
+- stage: PROD
+  jobs:
+  - deployment: PROD
+    environment: 'PROD'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: echo Deploying to PROD
+            
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              source: current
+              artifact: 'ArmTemplates'
+              downloadPath: $(System.ArtifactsDirectory)
+
+          - task: AzurePowerShell@5
+            displayName: 'Stop Triggers'
+            inputs:
+              azureSubscription: '$(prodServiceConnectionName)'
+              ScriptPath: '$(System.ArtifactsDirectory)/PrePostDeploymentScript.ps1'
+              ScriptArguments: "-armTemplate $(System.ArtifactsDirectory)/ARMTemplateForFactory.json \
+                -ResourceGroupName $(prodResourceGroupName) \
+                -DataFactoryName  $(prodDataFactoryName) \
+                -predeployment $true \
+                -deleteDeployment $false"
+              azurePowerShellVersion: LatestVersion
+
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'ARM Template deployment: Resource Group scope'
+            inputs:
+              azureResourceManagerConnection: '$(prodServiceConnectionName)'
+              subscriptionId: '$(prodSubscriptionId)'
+              resourceGroupName: '$(prodResourceGroupName)'
+              location: '$(prodLocation)'
+              csmFile: '$(System.ArtifactsDirectory)/ARMTemplateForFactory.json'
+              csmParametersFile: '$(System.ArtifactsDirectory)/ARMTemplateParametersForFactory.json'
+              overrideParameters: "-factoryName $(prodDataFactoryName) \
+                -Param1 '$(prodParam1)' \
+                -Param2 '$(prodParam2)' \
+                -Param3 '$(prodParam3)'"
+          
+          - task: AzurePowerShell@5
+            displayName: 'Start Triggers'
+            inputs:
+              azureSubscription: '$(prodServiceConnectionName)'
+              ScriptPath: '$(System.ArtifactsDirectory)/PrePostDeploymentScript.ps1'
+              ScriptArguments: "-armTemplate $(System.ArtifactsDirectory)/ARMTemplateForFactory.json \
+                -ResourceGroupName $(prodResourceGroupName) \
+                -DataFactoryName  $(prodDataFactoryName) \
+                -predeployment $false \
+                -deleteDeployment $false"
+              azurePowerShellVersion: LatestVersion
+  
