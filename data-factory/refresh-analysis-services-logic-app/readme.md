@@ -140,7 +140,8 @@ Add & configure Webhook Activity in Data Factory
           "Type": "Full"
       },
       "AAS Rollout Region": "<rollout_region>",
-      "AAS Server Name": "<server_name>"
+      "AAS Server Name": "<server_name>",
+      "Wait For Sync": <true/false>
   }
   ```
   *Example*
@@ -155,7 +156,8 @@ Add & configure Webhook Activity in Data Factory
           "Type": "Full"
       },
       "AAS Rollout Region": "westeurope",
-      "AAS Server Name": "analysisservicesdemo"
+      "AAS Server Name": "analysisservicesdemo",
+      "Wait For Sync": true
   }
   ```
 * **Report status on callback** - Checked
