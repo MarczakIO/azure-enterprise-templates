@@ -31,11 +31,11 @@
                 "definition": {
                     "$schema": "https://schema.management.azure.com/schemas/2016-06-01/Microsoft.Logic.json",
                     "actions": {
-                        "Catch": {
+                        "Catch:_If_any_errors_ocurred": {
                             "actions": {
                                 "Filter_array": {
                                     "inputs": {
-                                        "from": "@result('Try')",
+                                        "from": "@result('Try:_Refresh_model')",
                                         "where": "@equals(item()['status'], 'Failed')"
                                     },
                                     "runAfter": {},
@@ -67,28 +67,233 @@
                                 }
                             },
                             "runAfter": {
-                                "Try": [
+                                "Try:_Refresh_model": [
                                     "Failed"
                                 ]
                             },
                             "type": "Scope"
                         },
-                        "Condition": {
+                        "Create_\"Refresh_Response\"_variable": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "Refresh Message",
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "Create_\"Sync_Status\"_variable": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "Create_\"Refresh_Status\"_variable": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "Refresh Status",
+                                        "type": "string",
+                                        "value": "notStarted"
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "Respond_to_ADF_that_refresh_started": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "Create_\"Sync_Status\"_variable": {
+                            "inputs": {
+                                "variables": [
+                                    {
+                                        "name": "Sync Status",
+                                        "type": "integer",
+                                        "value": -1
+                                    }
+                                ]
+                            },
+                            "runAfter": {
+                                "Create_\"Refresh_Status\"_variable": [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type": "InitializeVariable"
+                        },
+                        "If_refresh_succeeded": {
                             "actions": {
-                                "Respond_to_ADF_webhook_when_finished_-_SUCCEEDED": {
-                                    "inputs": {
-                                        "body": {
-                                            "Output": {
-                                                "Status": "@{variables('Refresh Status')}",
-                                                "Workflow": "@workflow()"
+                                "Condition": {
+                                    "actions": {
+                                        "Catch:_Sync_Failed": {
+                                            "actions": {
+                                                "Filter_Sync_Errors": {
+                                                    "inputs": {
+                                                        "from": "@result('Try:_Sync')",
+                                                        "where": "@equals(item()['status'], 'Failed')"
+                                                    },
+                                                    "runAfter": {},
+                                                    "type": "Query"
+                                                },
+                                                "Respond_to_ADF_webhook_when_finished_-_FAILED_SYNC_EXTERNAL_REASONS": {
+                                                    "inputs": {
+                                                        "body": {
+                                                            "Error": {
+                                                                "ErrorCode": "500",
+                                                                "Message": "@{join(body('Filter_Sync_Errors'),' | ')}"
+                                                            },
+                                                            "Output": {
+                                                                "ErrorMessages": "@body('Filter_Sync_Errors')",
+                                                                "Status": "@{variables('Refresh Status')}",
+                                                                "SyncStatusCode": "@variables('Sync Status')",
+                                                                "Workflow": "@workflow()"
+                                                            },
+                                                            "StatusCode": "500"
+                                                        },
+                                                        "method": "POST",
+                                                        "uri": "@triggerBody()?['callBackUri']"
+                                                    },
+                                                    "runAfter": {
+                                                        "Filter_Sync_Errors": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
+                                                    "type": "Http"
+                                                }
                                             },
-                                            "StatusCode": "200"
+                                            "runAfter": {
+                                                "Try:_Sync": [
+                                                    "Failed"
+                                                ]
+                                            },
+                                            "type": "Scope"
                                         },
-                                        "method": "POST",
-                                        "uri": "@triggerBody()?['callBackUri']"
+                                        "Request_AAS_Sync": {
+                                            "inputs": {
+                                                "authentication": {
+                                                    "audience": "https://*.asazure.windows.net",
+                                                    "type": "ManagedServiceIdentity"
+                                                },
+                                                "method": "POST",
+                                                "uri": "https://@{triggerBody()?['AAS Rollout Region']}.asazure.windows.net/servers/@{triggerBody()?['AAS Server Name']}/models/@{triggerBody()?['AAS Model Name']}/sync"
+                                            },
+                                            "operationOptions": "DisableAsyncPattern",
+                                            "runAfter": {},
+                                            "type": "Http"
+                                        },
+                                        "Respond_to_ADF_webhook_when_finished_-_SYNC_SUCCEEDED": {
+                                            "inputs": {
+                                                "body": {
+                                                    "Output": {
+                                                        "Status": "@{variables('Refresh Status')}",
+                                                        "SyncStatusCode": "@variables('Sync Status')",
+                                                        "Workflow": "@workflow()"
+                                                    },
+                                                    "StatusCode": "200"
+                                                },
+                                                "method": "POST",
+                                                "uri": "@triggerBody()?['callBackUri']"
+                                            },
+                                            "runAfter": {
+                                                "Catch:_Sync_Failed": [
+                                                    "Skipped"
+                                                ]
+                                            },
+                                            "type": "Http"
+                                        },
+                                        "Try:_Sync": {
+                                            "actions": {
+                                                "Until_sync_is_in_progress": {
+                                                    "actions": {
+                                                        "Delay_-_Wait_for_Sync": {
+                                                            "inputs": {
+                                                                "interval": {
+                                                                    "count": 30,
+                                                                    "unit": "Second"
+                                                                }
+                                                            },
+                                                            "runAfter": {},
+                                                            "type": "Wait"
+                                                        },
+                                                        "Get_Sync_Status": {
+                                                            "inputs": {
+                                                                "authentication": {
+                                                                    "audience": "https://*.asazure.windows.net",
+                                                                    "type": "ManagedServiceIdentity"
+                                                                },
+                                                                "method": "GET",
+                                                                "uri": "@{outputs('Request_AAS_Sync')['headers']['Location']}"
+                                                            },
+                                                            "runAfter": {
+                                                                "Delay_-_Wait_for_Sync": [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type": "Http"
+                                                        },
+                                                        "Set_\"Sync_Status\"_variable": {
+                                                            "inputs": {
+                                                                "name": "Sync Status",
+                                                                "value": "@body('Get_Sync_Status')['syncstate']"
+                                                            },
+                                                            "runAfter": {
+                                                                "Get_Sync_Status": [
+                                                                    "Succeeded"
+                                                                ]
+                                                            },
+                                                            "type": "SetVariable"
+                                                        }
+                                                    },
+                                                    "expression": "@or(equals(variables('Sync Status'), 3),equals(variables('Sync Status'), 2))",
+                                                    "limit": {
+                                                        "count": 720,
+                                                        "timeout": "PT1H"
+                                                    },
+                                                    "runAfter": {},
+                                                    "type": "Until"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Request_AAS_Sync": [
+                                                    "Succeeded"
+                                                ]
+                                            },
+                                            "type": "Scope"
+                                        }
+                                    },
+                                    "else": {
+                                        "actions": {
+                                            "Respond_to_ADF_webhook_when_finished_-_REFRESH_SUCCEEDED": {
+                                                "inputs": {
+                                                    "body": {
+                                                        "Output": {
+                                                            "Status": "@{variables('Refresh Status')}",
+                                                            "Workflow": "@workflow()"
+                                                        },
+                                                        "StatusCode": "200"
+                                                    },
+                                                    "method": "POST",
+                                                    "uri": "@triggerBody()?['callBackUri']"
+                                                },
+                                                "runAfter": {},
+                                                "type": "Http"
+                                            }
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@triggerBody()?['Wait For Sync']",
+                                                    "@true"
+                                                ]
+                                            }
+                                        ]
                                     },
                                     "runAfter": {},
-                                    "type": "Http"
+                                    "type": "If"
                                 }
                             },
                             "else": {
@@ -126,44 +331,11 @@
                                 ]
                             },
                             "runAfter": {
-                                "Catch": [
+                                "Catch:_If_any_errors_ocurred": [
                                     "Skipped"
                                 ]
                             },
                             "type": "If"
-                        },
-                        "Create_\"Refresh_Response\"_variable": {
-                            "inputs": {
-                                "variables": [
-                                    {
-                                        "name": "Refresh Message",
-                                        "type": "string"
-                                    }
-                                ]
-                            },
-                            "runAfter": {
-                                "Create_\"Refresh_Status\"_variable": [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type": "InitializeVariable"
-                        },
-                        "Create_\"Refresh_Status\"_variable": {
-                            "inputs": {
-                                "variables": [
-                                    {
-                                        "name": "Refresh Status",
-                                        "type": "string",
-                                        "value": "notStarted"
-                                    }
-                                ]
-                            },
-                            "runAfter": {
-                                "Respond_to_ADF_that_refresh_started": [
-                                    "Succeeded"
-                                ]
-                            },
-                            "type": "InitializeVariable"
                         },
                         "Respond_to_ADF_that_refresh_started": {
                             "inputs": {
@@ -173,7 +345,7 @@
                             "runAfter": {},
                             "type": "Response"
                         },
-                        "Try": {
+                        "Try:_Refresh_model": {
                             "actions": {
                                 "Request_AAS_Refresh": {
                                     "inputs": {
@@ -194,18 +366,14 @@
                                 },
                                 "Until": {
                                     "actions": {
-                                        "Delay": {
+                                        "Delay_-_Wait_for_Refresh": {
                                             "inputs": {
                                                 "interval": {
                                                     "count": 30,
                                                     "unit": "Second"
                                                 }
                                             },
-                                            "runAfter": {
-                                                "Set_\"Refresh_Status\"_variable": [
-                                                    "Succeeded"
-                                                ]
-                                            },
+                                            "runAfter": {},
                                             "type": "Wait"
                                         },
                                         "Get_AAS_Refresh_Status": {
@@ -220,7 +388,11 @@
                                                 "method": "GET",
                                                 "uri": "@{outputs('Request_AAS_Refresh')['headers']?['Location']}"
                                             },
-                                            "runAfter": {},
+                                            "runAfter": {
+                                                "Delay_-_Wait_for_Refresh": [
+                                                    "Succeeded"
+                                                ]
+                                            },
                                             "type": "Http"
                                         },
                                         "Set_\"Refresh_Status\"_variable": {
@@ -276,6 +448,9 @@
                                         },
                                         "AAS Server Name": {
                                             "type": "string"
+                                        },
+                                        "Wait For Sync": {
+                                            "type": "boolean"
                                         },
                                         "callBackUri": {
                                             "type": "string"
