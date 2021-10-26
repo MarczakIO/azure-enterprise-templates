@@ -123,88 +123,53 @@
                             },
                             "type": "InitializeVariable"
                         },
-                        "If_refresh_succeeded": {
+                        "Respond_to_ADF_that_refresh_started": {
+                            "inputs": {
+                                "statusCode": 200
+                            },
+                            "kind": "Http",
+                            "runAfter": {},
+                            "type": "Response"
+                        },
+                        "Try:_Refresh_model": {
                             "actions": {
-                                "Condition": {
+                                "Condition:_Is_refresh_successful": {
                                     "actions": {
-                                        "Catch:_Sync_Failed": {
+                                        "Condition:_Should_sync_replicas": {
                                             "actions": {
-                                                "Filter_Sync_Errors": {
+                                                "Request_AAS_Sync": {
                                                     "inputs": {
-                                                        "from": "@result('Try:_Sync')",
-                                                        "where": "@equals(item()['status'], 'Failed')"
+                                                        "authentication": {
+                                                            "audience": "https://*.asazure.windows.net",
+                                                            "type": "ManagedServiceIdentity"
+                                                        },
+                                                        "method": "POST",
+                                                        "uri": "https://@{triggerBody()?['AAS Rollout Region']}.asazure.windows.net/servers/@{triggerBody()?['AAS Server Name']}/models/@{triggerBody()?['AAS Model Name']}/sync"
                                                     },
+                                                    "operationOptions": "DisableAsyncPattern",
                                                     "runAfter": {},
-                                                    "type": "Query"
+                                                    "type": "Http"
                                                 },
-                                                "Respond_to_ADF_webhook_when_finished_-_FAILED_SYNC_EXTERNAL_REASONS": {
+                                                "Respond_to_ADF_webhook_when_finished_-_SYNC_SUCCEEDED": {
                                                     "inputs": {
                                                         "body": {
-                                                            "Error": {
-                                                                "ErrorCode": "500",
-                                                                "Message": "@{join(body('Filter_Sync_Errors'),' | ')}"
-                                                            },
                                                             "Output": {
-                                                                "ErrorMessages": "@body('Filter_Sync_Errors')",
                                                                 "Status": "@{variables('Refresh Status')}",
                                                                 "SyncStatusCode": "@variables('Sync Status')",
                                                                 "Workflow": "@workflow()"
                                                             },
-                                                            "StatusCode": "500"
+                                                            "StatusCode": "200"
                                                         },
                                                         "method": "POST",
                                                         "uri": "@triggerBody()?['callBackUri']"
                                                     },
                                                     "runAfter": {
-                                                        "Filter_Sync_Errors": [
+                                                        "Until_sync_is_in_progress": [
                                                             "Succeeded"
                                                         ]
                                                     },
                                                     "type": "Http"
-                                                }
-                                            },
-                                            "runAfter": {
-                                                "Try:_Sync": [
-                                                    "Failed"
-                                                ]
-                                            },
-                                            "type": "Scope"
-                                        },
-                                        "Request_AAS_Sync": {
-                                            "inputs": {
-                                                "authentication": {
-                                                    "audience": "https://*.asazure.windows.net",
-                                                    "type": "ManagedServiceIdentity"
                                                 },
-                                                "method": "POST",
-                                                "uri": "https://@{triggerBody()?['AAS Rollout Region']}.asazure.windows.net/servers/@{triggerBody()?['AAS Server Name']}/models/@{triggerBody()?['AAS Model Name']}/sync"
-                                            },
-                                            "operationOptions": "DisableAsyncPattern",
-                                            "runAfter": {},
-                                            "type": "Http"
-                                        },
-                                        "Respond_to_ADF_webhook_when_finished_-_SYNC_SUCCEEDED": {
-                                            "inputs": {
-                                                "body": {
-                                                    "Output": {
-                                                        "Status": "@{variables('Refresh Status')}",
-                                                        "SyncStatusCode": "@variables('Sync Status')",
-                                                        "Workflow": "@workflow()"
-                                                    },
-                                                    "StatusCode": "200"
-                                                },
-                                                "method": "POST",
-                                                "uri": "@triggerBody()?['callBackUri']"
-                                            },
-                                            "runAfter": {
-                                                "Catch:_Sync_Failed": [
-                                                    "Skipped"
-                                                ]
-                                            },
-                                            "type": "Http"
-                                        },
-                                        "Try:_Sync": {
-                                            "actions": {
                                                 "Until_sync_is_in_progress": {
                                                     "actions": {
                                                         "Delay_-_Wait_for_Sync": {
@@ -251,28 +216,62 @@
                                                         "count": 720,
                                                         "timeout": "PT1H"
                                                     },
-                                                    "runAfter": {},
+                                                    "runAfter": {
+                                                        "Request_AAS_Sync": [
+                                                            "Succeeded"
+                                                        ]
+                                                    },
                                                     "type": "Until"
                                                 }
                                             },
-                                            "runAfter": {
-                                                "Request_AAS_Sync": [
-                                                    "Succeeded"
+                                            "else": {
+                                                "actions": {
+                                                    "Respond_to_ADF_webhook_when_finished_-_REFRESH_SUCCEEDED": {
+                                                        "inputs": {
+                                                            "body": {
+                                                                "Output": {
+                                                                    "Status": "@{variables('Refresh Status')}",
+                                                                    "Workflow": "@workflow()"
+                                                                },
+                                                                "StatusCode": "200"
+                                                            },
+                                                            "method": "POST",
+                                                            "uri": "@triggerBody()?['callBackUri']"
+                                                        },
+                                                        "runAfter": {},
+                                                        "type": "Http"
+                                                    }
+                                                }
+                                            },
+                                            "expression": {
+                                                "and": [
+                                                    {
+                                                        "equals": [
+                                                            "@triggerBody()?['Wait For Sync']",
+                                                            "@true"
+                                                        ]
+                                                    }
                                                 ]
                                             },
-                                            "type": "Scope"
+                                            "runAfter": {},
+                                            "type": "If"
                                         }
                                     },
                                     "else": {
                                         "actions": {
-                                            "Respond_to_ADF_webhook_when_finished_-_REFRESH_SUCCEEDED": {
+                                            "Respond_to_ADF_webhook_when_finished_-_FAILED_STATUS": {
                                                 "inputs": {
                                                     "body": {
+                                                        "Error": {
+                                                            "ErrorCode": "400",
+                                                            "Message": "@{join(body('Get_AAS_Refresh_Status')?['messages'],' | ')}"
+                                                        },
                                                         "Output": {
+                                                            "ErrorMessages": "@body('Get_AAS_Refresh_Status')?['messages']",
                                                             "Status": "@{variables('Refresh Status')}",
                                                             "Workflow": "@workflow()"
                                                         },
-                                                        "StatusCode": "200"
+                                                        "StatusCode": "400"
                                                     },
                                                     "method": "POST",
                                                     "uri": "@triggerBody()?['callBackUri']"
@@ -286,67 +285,19 @@
                                         "and": [
                                             {
                                                 "equals": [
-                                                    "@triggerBody()?['Wait For Sync']",
-                                                    "@true"
+                                                    "@variables('Refresh Status')",
+                                                    "succeeded"
                                                 ]
                                             }
                                         ]
                                     },
-                                    "runAfter": {},
-                                    "type": "If"
-                                }
-                            },
-                            "else": {
-                                "actions": {
-                                    "Respond_to_ADF_webhook_when_finished_-_FAILED_STATUS": {
-                                        "inputs": {
-                                            "body": {
-                                                "Error": {
-                                                    "ErrorCode": "400",
-                                                    "Message": "@{join(body('Get_AAS_Refresh_Status')?['messages'],' | ')}"
-                                                },
-                                                "Output": {
-                                                    "ErrorMessages": "@body('Get_AAS_Refresh_Status')?['messages']",
-                                                    "Status": "@{variables('Refresh Status')}",
-                                                    "Workflow": "@workflow()"
-                                                },
-                                                "StatusCode": "400"
-                                            },
-                                            "method": "POST",
-                                            "uri": "@triggerBody()?['callBackUri']"
-                                        },
-                                        "runAfter": {},
-                                        "type": "Http"
-                                    }
-                                }
-                            },
-                            "expression": {
-                                "and": [
-                                    {
-                                        "equals": [
-                                            "@variables('Refresh Status')",
-                                            "succeeded"
+                                    "runAfter": {
+                                        "Until": [
+                                            "Succeeded"
                                         ]
-                                    }
-                                ]
-                            },
-                            "runAfter": {
-                                "Catch:_If_any_errors_ocurred": [
-                                    "Skipped"
-                                ]
-                            },
-                            "type": "If"
-                        },
-                        "Respond_to_ADF_that_refresh_started": {
-                            "inputs": {
-                                "statusCode": 200
-                            },
-                            "kind": "Http",
-                            "runAfter": {},
-                            "type": "Response"
-                        },
-                        "Try:_Refresh_model": {
-                            "actions": {
+                                    },
+                                    "type": "If"
+                                },
                                 "Request_AAS_Refresh": {
                                     "inputs": {
                                         "authentication": {
