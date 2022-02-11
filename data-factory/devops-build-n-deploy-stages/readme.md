@@ -101,7 +101,7 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
         - stage: BUILD
         jobs:
         - template: <path_to_adf-build-job.yml_file>
-            parameters:
+          parameters:
             subscriptionId: <subscription_id>
             resourceGroupName: <resource_group_name>
             dataFactoryName: <data_factory_name>
