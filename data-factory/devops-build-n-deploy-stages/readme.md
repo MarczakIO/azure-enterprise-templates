@@ -220,7 +220,7 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
                   inputs:
                     azureSubscription: '${{ parameters.serviceConnectionName }}'
                     ScriptPath: '$(artifactsDirectory)/GlobalParametersUpdateScript.ps1'
-                    ScriptArguments: "-globalParametersFilePath $(artifactsDirectory)/GlobalParameters.        json \
+                    ScriptArguments: "-globalParametersFilePath $(artifactsDirectory)/GlobalParameters.json \
                       -resourceGroupName ${{ parameters.resourceGroupName }} \
                       -dataFactoryName ${{ parameters.dataFactoryName }}"
                     azurePowerShellVersion: LatestVersion
