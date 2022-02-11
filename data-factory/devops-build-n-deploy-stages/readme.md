@@ -7,6 +7,7 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
 
 1. In Azure Data Factory
     1. Setup ADF sync repo in your data factory
+       - Recommended to use Root Folder path **/data-factory/** or **/data-factory/<data_factory_name>** if you have many ADFs
 2. In Azure DevOps
     1. Create folder **/devops/** and then, in that folder create following files
         1. Create file [package.json](package.json) 
