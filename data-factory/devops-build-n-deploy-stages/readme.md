@@ -24,99 +24,69 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
         2. Create file [adf-build-job.yml](adf-build-job.yml)
             ```YAML
             parameters:
-            - name: environmentName 
-              type: string 
-            
-            - name: serviceConnectionName 
-              type: string 
-            
             - name: subscriptionId 
               type: string 
             
             - name: resourceGroupName 
-              type: string 
+              type: string
             
             - name: dataFactoryName 
-              type: string 
+              type: string
+            
+            - name: repoRootFolder
+              type: string
+              default: /
+            
+            - name: packageJsonFolder
+              type: string
+              default: /
             
             - name: artifactName
               type: string
               default: data-factory
             
-            - name: overrideParameters
-              type: string
-              default: 
-            
             jobs:
-            - deployment: ${{ parameters.environmentName }}
-              displayName: Deployment to ${{ parameters.environmentName }}
+            - job: BUILD
+              displayName: 'Build ARM Template'
               variables:
-              - name: artifactsDirectory
-                value: $(System.ArtifactsDirectory)/data-factory
-              environment: '${{ parameters.environmentName }}'
-              strategy:
-                runOnce:
-                  deploy:
-                    steps:
-                    - script: echo Deploying to ${{ parameters.environmentName }}
-                      displayName: 'Script - Display Environment Stage Name'
-                      
-                    - task: DownloadPipelineArtifact@2
-                      displayName: 'Download ADF ARM Template'
-                      inputs:
-                        source: current
-                        artifact: ${{ parameters.artifactName }}
-                        downloadPath: $(artifactsDirectory)
+                workingDirectory: $(Build.Repository.LocalPath)${{ parameters.repoRootFolder }}
+                packageJsonFolder: $(Build.Repository.LocalPath)${{ parameters.packageJsonFolder }}
+                dataFactoryResourceId: /subscriptions/${{ parameters.subscriptionId }}/resourceGroups/${{ parameters.resourceGroupName }}/providers/Microsoft.DataFactory/factories/${{ parameters.dataFactoryName }}
+                artifactTempDirectory: data-factory-arm
+              steps:
+              - task: NodeTool@0
+                inputs:
+                  versionSpec: '10.x'
+                displayName: 'Install Node.js'
             
-                    - script: 'ls $(artifactsDirectory)'
-                      displayName: 'List Artifact contents'
+              - task: Npm@1
+                inputs:
+                  command: 'install'
+                  workingDir: $(packageJsonFolder)
+                  verbose: true
+                displayName: 'Install npm package'
             
-                    - task: AzurePowerShell@5
-                      displayName: 'Stop Triggers'
-                      inputs:
-                        azureSubscription: '${{ parameters.serviceConnectionName }}'
-                        ScriptPath: '$(artifactsDirectory)/PrePostDeploymentScript.ps1'
-                        ScriptArguments: "-armTemplate $(artifactsDirectory)/ARMTemplateForFactory.json \
-                          -ResourceGroupName ${{ parameters.resourceGroupName }} \
-                          -DataFactoryName  ${{ parameters.dataFactoryName }} \
-                          -predeployment $true \
-                          -deleteDeployment $false"
-                        azurePowerShellVersion: LatestVersion
+              - task: Npm@1
+                inputs:
+                  command: 'custom'
+                  workingDir: $(packageJsonFolder)
+                  customCommand: 'run build validate $(workingDirectory) $(dataFactoryResourceId)'
+                displayName: 'Validate'
             
-                    - task: AzureResourceManagerTemplateDeployment@3
-                      displayName: 'ARM Template deployment'
-                      inputs:
-                        azureResourceManagerConnection: '${{ parameters.serviceConnectionName }}'
-                        subscriptionId: '${{ parameters.subscriptionId }}'
-                        resourceGroupName: '${{ parameters.resourceGroupName }}'
-                        location: 'Southeast Asia'
-                        csmFile: '$(artifactsDirectory)/ARMTemplateForFactory.json'
-                        csmParametersFile: '$(artifactsDirectory)/ARMTemplateParametersForFactory.json'
-                        overrideParameters: >
-                          -factoryName ${{ parameters.dataFactoryName }}
-                          ${{ parameters.overrideParameters }}
+              - task: Npm@1
+                inputs:
+                  command: 'custom'
+                  workingDir: $(packageJsonFolder)
+                  customCommand: 'run build export $(workingDirectory) $(dataFactoryResourceId) "$(artifactTempDirectory)"'
+                displayName: 'Validate and Generate ARM template'
             
-                    - task: AzurePowerShell@5
-                      displayName: 'Deploy Global Parameters'
-                      inputs:
-                        azureSubscription: '${{ parameters.serviceConnectionName }}'
-                        ScriptPath: '$(artifactsDirectory)/GlobalParametersUpdateScript.ps1'
-                        ScriptArguments: "-globalParametersFilePath $(artifactsDirectory)/GlobalParameters.            json \
-                          -resourceGroupName ${{ parameters.resourceGroupName }} \
-                          -dataFactoryName ${{ parameters.dataFactoryName }}"
-                        azurePowerShellVersion: LatestVersion
-                        
-                    - task: AzurePowerShell@5
-                      displayName: 'Start Triggers'
-                      inputs:
-                        azureSubscription: '${{ parameters.serviceConnectionName }}'
-                        ScriptPath: '$(artifactsDirectory)/PrePostDeploymentScript.ps1'
-                        ScriptArguments: "-armTemplate $(artifactsDirectory)/ARMTemplateForFactory.json \
-                          -ResourceGroupName ${{ parameters.resourceGroupName }} \
-                          -DataFactoryName ${{ parameters.dataFactoryName }} \
-                          -predeployment $false \
-                          -deleteDeployment $false"
-                        azurePowerShellVersion: LatestVersion
+              - script: 'mv -v $(packageJsonFolder)$(artifactTempDirectory)/${{ parameters.dataFactoryName }}_GlobalParameters.json $(packageJsonFolder)$(artifactTempDirectory)/GlobalParameters.json'
+                displayName: 'Rename Global Parameter File post'
+            
+              - task: PublishPipelineArtifact@1
+                inputs:
+                  targetPath: '$(packageJsonFolder)$(artifactTempDirectory)'
+                  artifact: ${{ parameters.artifactName }}
             ```
     2. Create new pipeline under path **/devops/adf-azure-pipelines.yml**, paste in the sample code
         ```YAML
