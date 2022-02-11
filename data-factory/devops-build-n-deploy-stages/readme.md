@@ -207,6 +207,9 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
                     azurePowerShellVersion: LatestVersion
         ```
     5. Navigate to **Project Settings >> Service Connections** and create new connection to Azure using Service Principal and grant at last **Data Factory Contributor** role to all data factories that you will be deploying to
+        1. In Azure Portal navigate to Azure Active Directory and create new App Registration
+        2. For ADF only piplines grant **Data Factory Contibutor** role on Azure Data Factory resource, or for full CI/CD in Azure grant **Contributor** role to an entire resource group
+        2. Copy the details of this service principal and subscription to Azure DevOps
     6. Create Environment (**Pipelines >> Environment**)
     7. Create Variable Group (**Pipelines >> Library >> Variable Groups**)
         1. Add variables that needs to be overriden in ADF template (factoryName is overriden by default)
@@ -228,4 +231,4 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
         ```
         1. **Replace temp variables** with your env values
     9. Run and test
-    10. Add any extra stages you need repeating steps 5, 6, 7, 8, 9
+    10. Add any extra deployment stages you need by repeating steps 5, 6, 7, 8, 9
