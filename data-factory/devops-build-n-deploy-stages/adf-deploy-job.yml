@@ -1,0 +1,94 @@
+parameters:
+- name: environmentName 
+  type: string 
+
+- name: serviceConnectionName 
+  type: string 
+
+- name: subscriptionId 
+  type: string 
+
+- name: resourceGroupName 
+  type: string 
+
+- name: dataFactoryName 
+  type: string 
+
+- name: artifactName
+  type: string
+  default: data-factory
+
+- name: overrideParameters
+  type: string
+  default: 
+
+jobs:
+- deployment: ${{ parameters.environmentName }}
+  displayName: Deployment to ${{ parameters.environmentName }}
+  variables:
+  - name: artifactsDirectory
+    value: $(System.ArtifactsDirectory)/data-factory
+  environment: '${{ parameters.environmentName }}'
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - script: echo Deploying to ${{ parameters.environmentName }}
+          displayName: 'Script - Display Environment Stage Name'
+          
+        - task: DownloadPipelineArtifact@2
+          displayName: 'Download ADF ARM Template'
+          inputs:
+            source: current
+            artifact: ${{ parameters.artifactName }}
+            downloadPath: $(artifactsDirectory)
+
+        - script: 'ls $(artifactsDirectory)'
+          displayName: 'List Artifact contents'
+
+        - task: AzurePowerShell@5
+          displayName: 'Stop Triggers'
+          inputs:
+            azureSubscription: '${{ parameters.serviceConnectionName }}'
+            ScriptPath: '$(artifactsDirectory)/PrePostDeploymentScript.ps1'
+            ScriptArguments: "-armTemplate $(artifactsDirectory)/ARMTemplateForFactory.json \
+              -ResourceGroupName ${{ parameters.resourceGroupName }} \
+              -DataFactoryName  ${{ parameters.dataFactoryName }} \
+              -predeployment $true \
+              -deleteDeployment $false"
+            azurePowerShellVersion: LatestVersion
+
+        - task: AzureResourceManagerTemplateDeployment@3
+          displayName: 'ARM Template deployment'
+          inputs:
+            azureResourceManagerConnection: '${{ parameters.serviceConnectionName }}'
+            subscriptionId: '${{ parameters.subscriptionId }}'
+            resourceGroupName: '${{ parameters.resourceGroupName }}'
+            location: 'Southeast Asia'
+            csmFile: '$(artifactsDirectory)/ARMTemplateForFactory.json'
+            csmParametersFile: '$(artifactsDirectory)/ARMTemplateParametersForFactory.json'
+            overrideParameters: >
+              -factoryName ${{ parameters.dataFactoryName }}
+              ${{ parameters.overrideParameters }}
+
+        - task: AzurePowerShell@5
+          displayName: 'Deploy Global Parameters'
+          inputs:
+            azureSubscription: '${{ parameters.serviceConnectionName }}'
+            ScriptPath: '$(artifactsDirectory)/GlobalParametersUpdateScript.ps1'
+            ScriptArguments: "-globalParametersFilePath $(artifactsDirectory)/GlobalParameters.json \
+              -resourceGroupName ${{ parameters.resourceGroupName }} \
+              -dataFactoryName ${{ parameters.dataFactoryName }}"
+            azurePowerShellVersion: LatestVersion
+            
+        - task: AzurePowerShell@5
+          displayName: 'Start Triggers'
+          inputs:
+            azureSubscription: '${{ parameters.serviceConnectionName }}'
+            ScriptPath: '$(artifactsDirectory)/PrePostDeploymentScript.ps1'
+            ScriptArguments: "-armTemplate $(artifactsDirectory)/ARMTemplateForFactory.json \
+              -ResourceGroupName ${{ parameters.resourceGroupName }} \
+              -DataFactoryName ${{ parameters.dataFactoryName }} \
+              -predeployment $false \
+              -deleteDeployment $false"
+            azurePowerShellVersion: LatestVersion

@@ -1,0 +1,64 @@
+parameters:
+- name: subscriptionId 
+  type: string 
+
+- name: resourceGroupName 
+  type: string
+
+- name: dataFactoryName 
+  type: string
+
+- name: repoRootFolder
+  type: string
+  default: /
+
+- name: packageJsonFolder
+  type: string
+  default: /
+
+- name: artifactName
+  type: string
+  default: data-factory
+
+jobs:
+- job: BUILD
+  displayName: 'Build ARM Template'
+  variables:
+    workingDirectory: $(Build.Repository.LocalPath)${{ parameters.repoRootFolder }}
+    packageJsonFolder: $(Build.Repository.LocalPath)${{ parameters.packageJsonFolder }}
+    dataFactoryResourceId: /subscriptions/${{ parameters.subscriptionId }}/resourceGroups/${{ parameters.resourceGroupName }}/providers/Microsoft.DataFactory/factories/${{ parameters.dataFactoryName }}
+    artifactTempDirectory: data-factory-arm
+  steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '10.x'
+    displayName: 'Install Node.js'
+
+  - task: Npm@1
+    inputs:
+      command: 'install'
+      workingDir: $(packageJsonFolder)
+      verbose: true
+    displayName: 'Install npm package'
+
+  - task: Npm@1
+    inputs:
+      command: 'custom'
+      workingDir: $(packageJsonFolder)
+      customCommand: 'run build validate $(workingDirectory) $(dataFactoryResourceId)'
+    displayName: 'Validate'
+
+  - task: Npm@1
+    inputs:
+      command: 'custom'
+      workingDir: $(packageJsonFolder)
+      customCommand: 'run build export $(workingDirectory) $(dataFactoryResourceId) "$(artifactTempDirectory)"'
+    displayName: 'Validate and Generate ARM template'
+
+  - script: 'mv -v $(packageJsonFolder)$(artifactTempDirectory)/${{ parameters.dataFactoryName }}_GlobalParameters.json $(packageJsonFolder)$(artifactTempDirectory)/GlobalParameters.json'
+    displayName: 'Rename Global Parameter File post'
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(packageJsonFolder)$(artifactTempDirectory)'
+      artifact: ${{ parameters.artifactName }}

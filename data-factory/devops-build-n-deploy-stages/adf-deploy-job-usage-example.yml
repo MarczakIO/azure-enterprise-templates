@@ -1,0 +1,13 @@
+- stage: <stage_name>
+  variables:
+  - group: <variable_group_name>
+  jobs:
+  - template: <path_to_adf-deploy-job.yml_file>
+    parameters:
+      environmentName: <environment_name>
+      subscriptionId: <subscription_id>
+      resourceGroupName: <resource_group_name>
+      dataFactoryName: <data_factory_name>
+      serviceConnectionName: <service_connection_name>
+      overrideParameters: >
+        -<param_1> <val_1>

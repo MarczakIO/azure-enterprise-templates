@@ -1,0 +1,17 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+
+- stage: BUILD
+  jobs:
+  - template: <path_to_adf-build-job.yml_file>
+    parameters:
+      subscriptionId: <subscription_id>
+      resourceGroupName: <resource_group_name>
+      dataFactoryName: <data_factory_name>
+      repoRootFolder: <absolute_path_to_datafactory_folder, ex. /data-factory/>
+      packageJsonFolder: <absolute_path_to_package_json, ex. /devops/)
