@@ -56,7 +56,7 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
               steps:
               - task: NodeTool@0
                 inputs:
-                  versionSpec: '10.x'
+                  versionSpec: '14.x'
                 displayName: 'Install Node.js'
             
               - task: Npm@1
