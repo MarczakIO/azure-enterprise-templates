@@ -17,7 +17,7 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
                     "build":"node node_modules/@microsoft/azure-data-factory-utilities/lib/index"
                 },
                 "dependencies":{
-                    "@microsoft/azure-data-factory-utilities":"^0.1.5"
+                    "@microsoft/azure-data-factory-utilities":"^1.0.0"
                 }
             } 
             ```
