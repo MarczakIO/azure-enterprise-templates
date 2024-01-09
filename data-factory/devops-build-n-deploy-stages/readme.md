@@ -8,6 +8,7 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
 1. In Azure Data Factory
     1. Setup ADF sync repo in your data factory
        - Recommended to use Root Folder path **/data-factory/** or **/data-factory/<data_factory_name>** if you have many ADFs
+    2. Make sure to check **Include global parameters in ARM template** option under **Manage >> ARM template**
 2. In Azure DevOps
     1. Create folder **/devops/** and then, in that folder create following files
         1. Create file [package.json](package.json) 
@@ -78,10 +79,7 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
                   command: 'custom'
                   workingDir: $(packageJsonFolder)
                   customCommand: 'run build export $(workingDirectory) $(dataFactoryResourceId) "$(artifactTempDirectory)"'
-                displayName: 'Validate and Generate ARM template'
-            
-              - script: 'mv -v $(packageJsonFolder)$(artifactTempDirectory)/${{ parameters.dataFactoryName }}_GlobalParameters.json $(packageJsonFolder)$(artifactTempDirectory)/GlobalParameters.json'
-                displayName: 'Rename Global Parameter File post'
+                displayName: 'Validate and Generate ARM template'        
             
               - task: PublishPipelineArtifact@1
                 inputs:
@@ -184,17 +182,7 @@ Job templates for building and deploying Azure Data Factory with Azure DevOps
                     overrideParameters: >
                       -factoryName ${{ parameters.dataFactoryName }}
                       ${{ parameters.overrideParameters }}
-        
-                - task: AzurePowerShell@5
-                  displayName: 'Deploy Global Parameters'
-                  inputs:
-                    azureSubscription: '${{ parameters.serviceConnectionName }}'
-                    ScriptPath: '$(artifactsDirectory)/GlobalParametersUpdateScript.ps1'
-                    ScriptArguments: "-globalParametersFilePath $(artifactsDirectory)/GlobalParameters.json \
-                      -resourceGroupName ${{ parameters.resourceGroupName }} \
-                      -dataFactoryName ${{ parameters.dataFactoryName }}"
-                    azurePowerShellVersion: LatestVersion
-                    
+                            
                 - task: AzurePowerShell@5
                   displayName: 'Start Triggers'
                   inputs:
