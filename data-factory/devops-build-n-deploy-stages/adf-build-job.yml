@@ -55,9 +55,6 @@ jobs:
       customCommand: 'run build export $(workingDirectory) $(dataFactoryResourceId) "$(artifactTempDirectory)"'
     displayName: 'Validate and Generate ARM template'
 
-  - script: 'mv -v $(packageJsonFolder)$(artifactTempDirectory)/${{ parameters.dataFactoryName }}_GlobalParameters.json $(packageJsonFolder)$(artifactTempDirectory)/GlobalParameters.json'
-    displayName: 'Rename Global Parameter File post'
-
   - task: PublishPipelineArtifact@1
     inputs:
       targetPath: '$(packageJsonFolder)$(artifactTempDirectory)'

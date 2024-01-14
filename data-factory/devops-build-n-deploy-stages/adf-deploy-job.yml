@@ -70,16 +70,6 @@ jobs:
             overrideParameters: >
               -factoryName ${{ parameters.dataFactoryName }}
               ${{ parameters.overrideParameters }}
-
-        - task: AzurePowerShell@5
-          displayName: 'Deploy Global Parameters'
-          inputs:
-            azureSubscription: '${{ parameters.serviceConnectionName }}'
-            ScriptPath: '$(artifactsDirectory)/GlobalParametersUpdateScript.ps1'
-            ScriptArguments: "-globalParametersFilePath $(artifactsDirectory)/GlobalParameters.json \
-              -resourceGroupName ${{ parameters.resourceGroupName }} \
-              -dataFactoryName ${{ parameters.dataFactoryName }}"
-            azurePowerShellVersion: LatestVersion
             
         - task: AzurePowerShell@5
           displayName: 'Start Triggers'
