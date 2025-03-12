@@ -13,7 +13,7 @@ resourcecontainers
 | where properties.managementGroupAncestorsChain[0].displayName startswith "A"
          or properties.managementGroupAncestorsChain[0].displayName startswith "B"
          or properties.managementGroupAncestorsChain[0].displayName startswith "C"
-         or properties.managementGroupAncestorsChain[0].displayName startswith "D
+         or properties.managementGroupAncestorsChain[0].displayName startswith "D"
 | project subscriptionId
 | join kind=inner (
     resources
