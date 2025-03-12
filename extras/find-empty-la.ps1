@@ -36,5 +36,6 @@ foreach( $id in $appServices.id ) {
     if($parsedResponse.value.Count -eq 0) {
         $laEmptyCount = $laEmptyCount + 1
         $laEmptyCount
+        Write-Host "Unused LA: $$id"
     }
 }
